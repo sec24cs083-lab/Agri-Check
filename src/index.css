@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+* {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+code, pre, .font-mono {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+/* Smooth scrolling */
+html { scroll-behavior: smooth; }
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #22c55e44; border-radius: 4px; }
+
+/* Mobile safe area */
+body {
+  overscroll-behavior: none;
+  background: #1a1a2e;
+}
+
+/* Prevent text selection on UI elements */
+button, nav, header {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Animation keyframes */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.animate-fade-in { animation: fadeIn 0.4s ease-out; }
+.animate-slide-up { animation: slideUp 0.35s cubic-bezier(0.34, 1.2, 0.64, 1); }
+
+/* Glassmorphism utility */
+.glass {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Gradient text utility */
+.gradient-text {
+  background: linear-gradient(135deg, #22c55e, #4ade80);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Disease risk colors */
+.risk-high { background: linear-gradient(135deg, #7f1d1d, #dc2626); }
+.risk-medium { background: linear-gradient(135deg, #78350f, #d97706); }
+.risk-low { background: linear-gradient(135deg, #14532d, #16a34a); }
+
+/* Card shadow */
+.card-shadow { box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04); }
+
+/* Active state for touch */
+.active\:scale-98:active { transform: scale(0.98); }
+
+/* Demo mode indicator */
+.demo-badge {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 1.5px solid #f59e0b;
+  color: #92400e;
+}
