@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   FarmerProfile, SensorData, SoilAnalysisReport, WeatherData, Language,
   SoilScanData, Prediction, FeedbackType, Farm, ScanResult
@@ -418,8 +419,19 @@ export default function App() {
         )}
 
         {/* Main Content */}
-        <main className="flex-1 px-4 py-4 overflow-y-auto">
-          {renderScreen()}
+        <main className="flex-1 px-4 py-4 overflow-x-hidden relative">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeScreen}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="w-full h-full overflow-y-auto"
+            >
+              {renderScreen()}
+            </motion.div>
+          </AnimatePresence>
         </main>
 
         {/* Bottom Navigation */}

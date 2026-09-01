@@ -1,5 +1,7 @@
 import React, { useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Language, Farm, ScanResult } from '../../types/agri';
+import { TextToSpeech } from '../TextToSpeech';
 
 interface CropScanScreenProps {
   language: Language;
@@ -37,7 +39,7 @@ const tx = {
     takePhoto: 'புகைப்படம் எடு',
     orText: 'அல்லது இங்கே இழுக்கவும்',
     analyzeBtn: 'AI மூலம் பகுப்பாய்வு',
-    supported: 'ஆதரவு: JPG, JPEG, PNG • அதிகபட்சம் 10MB',
+    supported: 'ஆதரவு: JPG, PNG • அதிகபட்சம் 10MB',
     noImage: 'முதலில் படத்தை தேர்ந்தெடுக்கவும்',
     tips: 'சிறந்த முடிவுக்கு:',
     tip1: 'ஒரு இலையை தெளிவாக படம் எடுக்கவும்',
@@ -85,124 +87,176 @@ export const CropScanScreen: React.FC<CropScanScreenProps> = ({ language, farms,
     onScanComplete({ imageFile, imageUrl, crop: selectedCrop, farmId: selectedFarmId });
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0, x: 20 },
+    show: { opacity: 1, x: 0, transition: { staggerChildren: 0.1 } },
+    exit: { opacity: 0, x: -20 }
+  };
+  
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    show: { opacity: 1, y: 0 }
+  };
+
+  const ttsText = `${T.tips} ${T.tip1}. ${T.tip2}. ${T.tip3}. ${T.tip4}.`;
+
   return (
-    <div className="pb-4 space-y-4">
+    <motion.div variants={containerVariants} initial="hidden" animate="show" exit="exit" className="pb-4 space-y-4">
       {/* Demo Mode Banner */}
-      <div className="px-3 py-2 rounded-xl flex items-center gap-2"
+      <motion.div variants={itemVariants} className="px-4 py-3 rounded-2xl flex items-center gap-3 shadow-sm"
         style={{ background: 'linear-gradient(135deg, #fef3c7, #fde68a)', border: '1px solid #f59e0b' }}>
-        <span>🤖</span>
-        <p className="text-xs text-amber-800 font-medium">{T.demoMode}</p>
-      </div>
+        <span className="text-xl">🤖</span>
+        <p className="text-xs text-amber-900 font-bold leading-relaxed">{T.demoMode}</p>
+      </motion.div>
 
       {/* Farm & Crop Selection */}
-      <div className="rounded-2xl p-4 space-y-3"
-        style={{ background: 'white', boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
+      <motion.div variants={itemVariants} className="rounded-3xl p-5 space-y-4 bg-white shadow-sm border border-gray-100">
         <div>
-          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-2">{T.selectFarm}</label>
+          <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest block mb-2">{T.selectFarm}</label>
           <select value={selectedFarmId} onChange={e => { setSelectedFarmId(Number(e.target.value)); const f = farms.find(f => f.id === Number(e.target.value)); if (f) setSelectedCrop(f.crop); }}
-            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-gray-800 text-sm focus:outline-none"
-            style={{ borderColor: '#d1fae5' }}>
+            className="w-full px-4 py-3.5 rounded-2xl border-2 border-green-100 text-gray-800 text-sm font-semibold focus:outline-none focus:border-green-400 bg-gray-50 transition-colors">
             {farms.map(f => <option key={f.id} value={f.id}>🌾 {f.name}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-2">{T.selectCrop}</label>
+          <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest block mb-2">{T.selectCrop}</label>
           <select value={selectedCrop} onChange={e => setSelectedCrop(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-gray-800 text-sm focus:outline-none"
-            style={{ borderColor: '#d1fae5' }}>
+            className="w-full px-4 py-3.5 rounded-2xl border-2 border-green-100 text-gray-800 text-sm font-semibold focus:outline-none focus:border-green-400 bg-gray-50 transition-colors">
             {CROPS.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
-      </div>
+      </motion.div>
 
       {/* Upload Area */}
-      <div
-        onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={handleDrop}
-        onClick={() => !imageUrl && fileInputRef.current?.click()}
-        className="rounded-2xl overflow-hidden cursor-pointer transition-all duration-200"
-        style={{
-          border: `2px dashed ${isDragging ? '#22c55e' : imageUrl ? '#22c55e' : '#d1d5db'}`,
-          background: isDragging ? '#f0fdf4' : 'white',
-          transform: isDragging ? 'scale(1.01)' : 'scale(1)',
-          minHeight: '220px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-        {imageUrl ? (
-          <div className="relative w-full">
-            <img src={imageUrl} alt="Leaf" className="w-full h-52 object-cover" />
-            <div className="absolute inset-0 flex items-end justify-end p-3">
-              <button onClick={e => { e.stopPropagation(); setImageUrl(null); setImageFile(null); }}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm"
-                style={{ background: 'rgba(0,0,0,0.7)' }}>✕</button>
-            </div>
-            <div className="absolute top-2 left-2 px-2 py-1 rounded-lg text-xs font-bold text-white"
-              style={{ background: 'rgba(34,197,94,0.9)' }}>✓ Ready to analyze</div>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-3 p-8">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-              style={{ background: '#f0fdf4' }}>
-              <span className="text-3xl">🍃</span>
-            </div>
-            <div className="text-center">
-              <p className="text-gray-700 font-semibold text-sm">{T.uploadImage}</p>
-              <p className="text-gray-400 text-xs mt-1">{T.orText}</p>
-            </div>
-            <p className="text-gray-400 text-xs text-center">{T.supported}</p>
-          </div>
-        )}
-      </div>
-      <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png" className="hidden"
-        onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
+      <motion.div variants={itemVariants}>
+        <div
+          onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={handleDrop}
+          onClick={() => !imageUrl && fileInputRef.current?.click()}
+          className="rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 relative group shadow-sm"
+          style={{
+            border: `2px dashed ${isDragging ? '#10b981' : imageUrl ? 'transparent' : '#cbd5e1'}`,
+            background: isDragging ? '#ecfdf5' : 'white',
+            transform: isDragging ? 'scale(1.02)' : 'scale(1)',
+            minHeight: '240px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+          <AnimatePresence mode="wait">
+            {imageUrl ? (
+              <motion.div 
+                key="image"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="relative w-full h-full"
+              >
+                <img src={imageUrl} alt="Leaf" className="w-full h-60 object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-end p-4">
+                  <motion.button 
+                    whileTap={{ scale: 0.9 }}
+                    onClick={e => { e.stopPropagation(); setImageUrl(null); setImageFile(null); }}
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-white/20 backdrop-blur-md text-white border border-white/30"
+                  >
+                    ✕
+                  </motion.button>
+                </div>
+                <div className="absolute top-3 left-3 px-3 py-1.5 rounded-xl text-xs font-black text-white bg-green-500/90 backdrop-blur-sm shadow-md">
+                  ✓ Ready
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div 
+                key="placeholder"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col items-center gap-4 p-8 w-full"
+              >
+                <div className="w-20 h-20 rounded-full flex items-center justify-center bg-green-50 text-4xl shadow-inner group-hover:scale-110 transition-transform">
+                  🍃
+                </div>
+                <div className="text-center">
+                  <p className="text-gray-800 font-black text-base">{T.uploadImage}</p>
+                  <p className="text-gray-400 font-medium text-sm mt-1">{T.orText}</p>
+                </div>
+                <p className="text-gray-400 text-xs font-semibold bg-gray-50 px-3 py-1 rounded-lg">{T.supported}</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+        <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png" className="hidden"
+          onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
+      </motion.div>
 
       {/* Upload Buttons */}
-      <div className="grid grid-cols-2 gap-3">
-        <button onClick={() => fileInputRef.current?.click()}
-          className="py-3 rounded-xl text-sm font-bold transition-all active:scale-95"
-          style={{ background: '#f0fdf4', color: '#16a34a', border: '1.5px solid #86efac' }}>
-          📁 {T.uploadImage}
-        </button>
-        <button onClick={() => { fileInputRef.current!.capture = 'environment'; fileInputRef.current?.click(); }}
-          className="py-3 rounded-xl text-sm font-bold transition-all active:scale-95"
-          style={{ background: '#f0fdf4', color: '#16a34a', border: '1.5px solid #86efac' }}>
-          📷 {T.takePhoto}
-        </button>
-      </div>
+      <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3">
+        <motion.button whileTap={{ scale: 0.95 }} onClick={() => fileInputRef.current?.click()}
+          className="py-4 rounded-2xl text-sm font-black text-green-700 bg-green-50 border-2 border-green-100 shadow-sm flex flex-col items-center gap-1">
+          <span className="text-2xl">📁</span>
+          {T.uploadImage}
+        </motion.button>
+        <motion.button whileTap={{ scale: 0.95 }} onClick={() => { fileInputRef.current!.capture = 'environment'; fileInputRef.current?.click(); }}
+          className="py-4 rounded-2xl text-sm font-black text-blue-700 bg-blue-50 border-2 border-blue-100 shadow-sm flex flex-col items-center gap-1">
+          <span className="text-2xl">📷</span>
+          {T.takePhoto}
+        </motion.button>
+      </motion.div>
 
       {/* Error */}
-      {error && (
-        <div className="px-4 py-3 rounded-xl" style={{ background: '#fef2f2', border: '1px solid #fca5a5' }}>
-          <p className="text-red-600 text-sm">⚠️ {error}</p>
-        </div>
-      )}
+      <AnimatePresence>
+        {error && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }} 
+            animate={{ opacity: 1, height: 'auto' }} 
+            exit={{ opacity: 0, height: 0 }}
+            className="px-4 py-3 rounded-2xl bg-red-50 border border-red-200"
+          >
+            <p className="text-red-600 text-sm font-bold">⚠️ {error}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Tips */}
-      <div className="rounded-2xl p-4" style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">💡 {T.tips}</p>
-        <div className="space-y-1">
+      <motion.div variants={itemVariants} className="rounded-3xl p-5 bg-white shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">💡 {T.tips}</p>
+          <TextToSpeech text={ttsText} language={language} />
+        </div>
+        <div className="space-y-2">
           {[T.tip1, T.tip2, T.tip3, T.tip4].map((tip, i) => (
-            <p key={i} className="text-xs text-gray-600 flex items-start gap-2">
-              <span className="text-green-500 mt-0.5">✓</span>{tip}
-            </p>
+            <div key={i} className="text-sm font-medium text-gray-600 flex items-start gap-3 bg-gray-50 p-2.5 rounded-xl">
+              <span className="text-green-500 font-bold bg-green-100 w-5 h-5 flex items-center justify-center rounded-full flex-shrink-0 text-xs">✓</span>
+              {tip}
+            </div>
           ))}
         </div>
-      </div>
+      </motion.div>
 
       {/* Analyze Button */}
-      <button onClick={handleAnalyze} disabled={!imageFile || analyzing}
-        className="w-full py-4 rounded-2xl text-white font-black text-base transition-all active:scale-95 disabled:opacity-50"
-        style={{ background: imageFile && !analyzing ? 'linear-gradient(135deg, #22c55e, #16a34a)' : '#9ca3af', boxShadow: imageFile ? '0 8px 24px rgba(34,197,94,0.35)' : 'none' }}>
+      <motion.button 
+        variants={itemVariants}
+        whileHover={imageFile && !analyzing ? { scale: 1.02 } : {}}
+        whileTap={imageFile && !analyzing ? { scale: 0.95 } : {}}
+        onClick={handleAnalyze} 
+        disabled={!imageFile || analyzing}
+        className="w-full py-4.5 rounded-3xl text-white font-black text-lg transition-all shadow-xl relative overflow-hidden group"
+        style={{ 
+          background: imageFile && !analyzing ? 'linear-gradient(135deg, #10b981, #059669)' : '#9ca3af', 
+          opacity: (!imageFile && !analyzing) ? 0.6 : 1 
+        }}
+      >
         {analyzing ? (
-          <span className="flex items-center justify-center gap-2">
-            <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          <span className="flex items-center justify-center gap-3">
+            <span className="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
             {T.analyzing}
           </span>
         ) : (
-          `🔬 ${T.analyzeBtn}`
+          <span className="flex items-center justify-center gap-2">
+            <span className="text-2xl">✨</span> {T.analyzeBtn}
+          </span>
         )}
-      </button>
-    </div>
+      </motion.button>
+    </motion.div>
   );
 };
